@@ -1,5 +1,6 @@
 from typing import List
-from fastapi import APIRouter,  Depends, status, UploadFile, File
+from fastapi import APIRouter,  Depends, status, UploadFile, File, HTTPException, Form
+from pydantic import ValidationError
 from app.services.image_service import salvar_imagem
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -11,14 +12,36 @@ from app.services import component_service
 
 router = APIRouter(prefix='/component', tags=["Componentes"])
 
-@router.post('/', response_model=ComponentResponse, status_code=status.HTTP_201_CREATED)
-def create_component(
-    component: ComponentCreate,
+@router.post(
+    "/",
+    response_model=ComponentResponse,
+    status_code=status.HTTP_201_CREATED
+)
+async def create_component(
+    component: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin)
 ):
-    return component_service.create_component(db, component, file)
+    try:
+        component_data = ComponentCreate.model_validate_json(
+            component
+        )
+
+    except ValidationError as erro:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=erro.errors(
+                include_context=False,
+                include_url=False
+            )
+        )
+
+    return await component_service.create_component(
+        db,
+        component_data,
+        file
+    )
 
 @router.post("/upload")
 async def upload_imagem(

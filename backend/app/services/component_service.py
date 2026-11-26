@@ -109,7 +109,8 @@ def get_all_available(
             name = component.name,
             description=component.description,
             quantity=quantity_component_available(db, component.component_id),
-            quantity_total= component.quantity
+            quantity_total= component.quantity,
+            image_url = component.image_url
         )
         components_available.append(component_available)
 
