@@ -3,336 +3,578 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Reserva de Equipamentos - EE</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='painel.css') }}">
+
+    <link rel="stylesheet" href="../static/painel.css">
 </head>
+
 <body class="bg-light">
 
+    <!-- Barra de navegação -->
     <nav class="navbar navbar-dark bg-dark mb-4 shadow-sm">
-        <div class="container d-flex justify-content-between align-items-center">
-            <span class="navbar-brand mb-0 h1">Sistema de Reservas - Laboratório de Energia e Controle</span>
+        <div class="container d-flex justify-content-between align-items-center gap-2">
+
+            <span class="navbar-brand mb-0 h1 text-wrap">
+                Sistema de Reservas - Laboratório de Energia e Controle
+            </span>
+
             <div class="d-flex align-items-center gap-3">
-                <span class="navbar-text mb-0 text-light">Perfil: Aluno</span>
-                <a href="/" class="btn btn-outline-light btn-sm">Sair</a>
+
+                <span class="navbar-text mb-0 text-light text-nowrap"
+                      id="perfilUsuario">
+                    Perfil: carregando...
+                </span>
+
+                <button type="button"
+                        id="btnSair"
+                        class="btn btn-outline-light btn-sm">
+                    Sair
+                </button>
+
             </div>
         </div>
     </nav>
 
-    <div class="container">
+    <!-- Conteúdo principal -->
+    <main class="container pb-4">
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
-                        <strong>Aviso:</strong> {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        {% if conflito %}
-        <div class="alert alert-danger shadow-sm border-danger" role="alert">
-            <strong>Atenção:</strong> {{ conflito.equipamento_nome }} está bloqueado por uma devolução em atraso.
-            <a href="#" class="alert-link">Ver detalhes do conflito</a>.
+        <!-- Mensagens do sistema -->
+        <div id="mensagemPainel"
+             class="alert d-none"
+             role="alert"
+             aria-live="polite">
         </div>
-        {% endif %}
 
+        <!-- Barra de pesquisa e filtros -->
         <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
-            <div class="position-relative" style="max-width: 340px; flex: 1;">
-                <span class="position-absolute top-50 start-0 translate-middle-y ps-3 text-muted">🔍</span>
-                <input type="text" id="buscaEquipamento" class="form-control ps-5"
-                       placeholder="Buscar equipamento ou código..." oninput="filtrarEquipamentos()">
+
+            <div class="position-relative"
+                 style="max-width: 340px; flex: 1;">
+
+                <span class="position-absolute top-50 start-0 translate-middle-y ps-3 text-muted">
+                    🔍
+                </span>
+
+                <input type="search"
+                       id="buscaEquipamento"
+                       class="form-control ps-5"
+                       placeholder="Buscar equipamento ou código..."
+                       aria-label="Buscar equipamento">
+
             </div>
-            <button type="button" class="btn btn-outline-secondary btn-sm filtro-chip active" data-filtro="todos" onclick="setFiltro('todos', this)">Todos</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm filtro-chip" data-filtro="disponivel" onclick="setFiltro('disponivel', this)">Disponíveis</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm filtro-chip" data-filtro="bloqueado" onclick="setFiltro('bloqueado', this)">Bloqueados</button>
+
+            <button type="button"
+                    class="btn btn-outline-secondary btn-sm filtro-chip active"
+                    data-filtro="todos">
+                Todos
+            </button>
+
+            <button type="button"
+                    class="btn btn-outline-secondary btn-sm filtro-chip"
+                    data-filtro="disponivel">
+                Disponíveis
+            </button>
+
+            <button type="button"
+                    class="btn btn-outline-secondary btn-sm filtro-chip"
+                    data-filtro="bloqueado"
+                    disabled
+                    title="A API atual não informa equipamentos bloqueados">
+                Bloqueados
+            </button>
+
         </div>
 
         <div class="row">
 
-            <div class="col-md-3 mb-4">
+            <!-- Reservas ativas -->
+            <aside class="col-md-3 mb-4">
+
                 <div class="card shadow-sm border-0">
+
                     <div class="card-header bg-secondary text-white fw-bold">
                         Reservas Ativas
                     </div>
-                    <ul class="list-group list-group-flush">
-                        {% for r in reservas %}
-                        <li class="list-group-item">
-                            <small class="text-muted d-block">{{ r.patrimonio }}</small>
-                            <strong>{{ r.nome }}</strong><br>
-                            <span class="badge bg-success mt-1">{{ r.status }}</span>
-                            <small class="d-block mt-2 {{ 'text-danger fw-bold' if r.dias_restantes is defined and r.dias_restantes <= 1 else '' }}">
-                                Devolução: {{ r.data_devolucao }}{% if r.dias_restantes is defined %} ({{ r.dias_restantes }} dia(s) restante(s)){% endif %}
-                            </small>
-                        </li>
-                        {% else %}
-                        <li class="list-group-item text-muted small">
-                            Nenhuma reserva ativa no momento.
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    <div class="card-footer bg-white border-0 text-center pb-3 pt-3">
-                        <button class="btn btn-sm btn-outline-secondary w-100 fw-bold" data-bs-toggle="modal" data-bs-target="#modalHistorico">
-                            🕰️ Ver Histórico Completo
-                        </button>
-                    </div>
-                </div>
-            </div>
 
-            <div class="col-md-9">
+                    <!-- Reservas carregadas pelo JavaScript -->
+                    <ul class="list-group list-group-flush"
+                        id="listaReservas">
+
+                        <li class="list-group-item text-muted small">
+                            Carregando reservas...
+                        </li>
+
+                    </ul>
+
+                    <div class="card-footer bg-white border-0 text-center pb-3 pt-3">
+
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary w-100 fw-bold"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalHistorico">
+
+                            🕰️ Ver Histórico Completo
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </aside>
+
+            <!-- Tabela de equipamentos -->
+            <section class="col-md-9">
+
                 <div class="card shadow-sm border-0">
+
                     <div class="card-header bg-primary text-white fw-bold">
                         Equipamentos Disponíveis
                     </div>
-                    <div class="card-body p-0">
-                        <table class="table table-hover align-middle mb-0" id="tabelaEquipamentos">
+
+                    <div class="card-body p-0 table-responsive">
+
+                        <table class="table table-hover align-middle mb-0"
+                               id="tabelaEquipamentos">
+
                             <thead class="table-light">
+
                                 <tr>
                                     <th class="ps-3">Equipamento</th>
                                     <th>Status</th>
-                                    <th>Estoque</th>
+                                    <th>Estoque disponível</th>
                                     <th class="pe-3 text-end">Ação</th>
                                 </tr>
+
                             </thead>
-                            <tbody>
-                                {% for item in equipamentos %}
-                                <tr class="{{ 'table-danger' if item.status == 'bloqueado' else '' }}"
-                                    data-nome="{{ item.nome|lower }}" data-patrimonio="{{ item.patrimonio|lower }}"
-                                    data-status="{{ item.status }}">
-                                    <td class="ps-3">
-                                        <span class="text-decoration-none fw-bold" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalDetalhes{{ item.id }}">
-                                            🔍 {{ item.nome }}
-                                        </span><br>
-                                        <small class="text-muted">{{ item.patrimonio }} | {{ item.observacao }}</small>
-                                    </td>
-                                    <td>
-                                        {% if item.status == 'disponivel' %}
-                                            <span class="badge bg-success">Disponível</span>
-                                        {% elif item.status == 'parcial' %}
-                                             <span class="badge bg-warning text-dark">Parcial</span>
-                                        {% else %}
-                                            <span class="badge bg-danger">Bloqueado</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ item.estoque_disp }} / {{ item.estoque_total }}</td>
-                                    <td class="pe-3 text-end">
-                                        {% if item.status != 'bloqueado' %}
-                                            <button class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#modalReserva"
-                                                    onclick="prepararReserva('{{ item.id }}', '{{ item.nome }}')">
-                                                Reservar
-                                            </button>
-                                        {% else %}
-                                            <!-- ATUALIZADO: Botão Avise-me funcional enviando POST -->
-                                            <form action="/solicitar-aviso" method="POST" class="d-inline">
-                                                <input type="hidden" name="equipamento_id" value="{{ item.id }}">
-                                                <button type="submit" class="btn btn-outline-warning btn-sm px-3 fw-bold text-dark">Avise-me</button>
-                                            </form>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% else %}
+
+                            <!-- Equipamentos carregados pelo JavaScript -->
+                            <tbody id="corpoEquipamentos">
+
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted py-4">
-                                        Nenhum equipamento cadastrado ainda.
+                                    <td colspan="4"
+                                        class="text-center text-muted py-4">
+
+                                        Carregando equipamentos...
+
                                     </td>
                                 </tr>
-                                {% endfor %}
-                                <tr id="avisoNenhumResultado" style="display: none;">
-                                    <td colspan="4" class="text-center text-muted py-4">
-                                        Nenhum equipamento encontrado para essa busca/filtro.
-                                    </td>
-                                </tr>
+
                             </tbody>
+
                         </table>
+
                     </div>
+
                 </div>
-            </div>
+
+            </section>
 
         </div>
-    </div>
 
-    {% for item in equipamentos %}
-    <div class="modal fade" id="modalDetalhes{{ item.id }}" tabindex="-1" aria-hidden="true">
+    </main>
+
+    <!-- ============================================================
+         MODAL DE DETALHES DO EQUIPAMENTO
+         ============================================================ -->
+
+    <div class="modal fade"
+         id="modalDetalhes"
+         tabindex="-1"
+         aria-labelledby="detalhesTitulo"
+         aria-hidden="true">
+
         <div class="modal-dialog modal-dialog-centered">
+
             <div class="modal-content border-0 shadow">
+
                 <div class="modal-header bg-primary text-white border-0">
-                    <h5 class="modal-title fw-bold">Detalhes do Equipamento</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                </div>
-                <div class="modal-body text-center p-4">
-                    <img src="{{ item.foto if item.foto else 'https://placehold.co/400x250/e2e8f0/1e293b?text=Sem+Foto' }}"
-                         alt="{{ item.nome }}" class="img-fluid rounded mb-4 shadow-sm border">
-                    <h5 class="fw-bold mb-1">{{ item.nome }}</h5>
-                    <span class="badge bg-secondary mb-3">Patrimônio: {{ item.patrimonio }}</span>
-                    <p class="text-muted small px-3">
-                        {{ item.descricao if item.descricao else item.observacao }}
-                    </p>
-                </div>
-                <div class="modal-footer bg-light border-0 justify-content-between">
-                    <button type="button" class="btn btn-outline-secondary fw-bold px-4" data-bs-dismiss="modal">Voltar</button>
-                    {% if item.status != 'bloqueado' %}
-                    <button type="button" class="btn btn-success fw-bold px-4" data-bs-dismiss="modal" data-bs-toggle="modal"
-                            data-bs-target="#modalReserva" onclick="prepararReserva('{{ item.id }}', '{{ item.nome }}')">
-                        Avançar para Reserva
+
+                    <h5 class="modal-title fw-bold"
+                        id="detalhesTitulo">
+
+                        Detalhes do Equipamento
+
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"
+                            aria-label="Fechar">
                     </button>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
 
-    <div class="modal fade" id="modalReserva" tabindex="-1" aria-labelledby="modalReservaLabel" aria-hidden="true">
+                </div>
+
+                <div class="modal-body text-center p-4">
+
+                    <!-- Fotografia do equipamento -->
+                    <div class="text-muted small border rounded py-4 mb-3">
+                        Sem foto cadastrada
+                    </div>
+
+                    <!-- Nome -->
+                    <h5 class="fw-bold mb-1"
+                        id="detalhesNome">
+                        —
+                    </h5>
+
+                    <!-- Código -->
+                    <span class="badge bg-secondary mb-3"
+                          id="detalhesCodigo">
+                        Código: —
+                    </span>
+
+                    <!-- Descrição -->
+                    <p class="text-muted small px-3"
+                       id="detalhesDescricao">
+                    </p>
+
+                    <!-- Estoque -->
+                    <p class="mb-0 small">
+
+                        Quantidade disponível:
+
+                        <strong id="detalhesEstoque">
+                            —
+                        </strong>
+
+                    </p>
+
+                </div>
+
+                <div class="modal-footer bg-light border-0 justify-content-between">
+
+                    <button type="button"
+                            class="btn btn-outline-secondary fw-bold px-4"
+                            data-bs-dismiss="modal">
+
+                        Voltar
+
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-success fw-bold px-4"
+                            id="btnDetalhesReservar">
+
+                        Avançar para Reserva
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ============================================================
+         MODAL DE SOLICITAÇÃO DE RESERVA
+         ============================================================ -->
+
+    <div class="modal fade"
+         id="modalReserva"
+         tabindex="-1"
+         aria-labelledby="modalReservaLabel"
+         aria-hidden="true">
+
         <div class="modal-dialog modal-dialog-centered">
+
             <div class="modal-content border-0 shadow">
+
                 <div class="modal-header bg-primary text-white border-0">
-                    <h5 class="modal-title fw-bold" id="modalReservaLabel">Solicitar Equipamento</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+                    <h5 class="modal-title fw-bold"
+                        id="modalReservaLabel">
+
+                        Solicitar Equipamento
+
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"
+                            aria-label="Fechar">
+                    </button>
+
                 </div>
-                <form action="/painel" method="POST">
+
+                <!-- Formulário integrado ao painel.js -->
+                <form id="formReserva">
+
                     <div class="modal-body">
+
+                        <!-- Equipamento selecionado -->
+                        <p class="text-muted small mb-1">
+                            Equipamento selecionado:
+                        </p>
+
+                        <p class="fw-bold"
+                           id="reservaEquipamentoNome">
+                            —
+                        </p>
+
+                        <!-- Identificador do componente -->
+                        <input type="hidden"
+                               id="reservaEquipamentoId"
+                               name="component_id">
+
+                        <!-- Quantidade -->
                         <div class="mb-3">
-                            <p class="text-muted small mb-1">Equipamento selecionado:</p>
-                            <p class="fw-bold mb-0" id="reservaEquipamentoNome">—</p>
+
+                            <label for="reservaQuantidade"
+                                   class="form-label fw-semibold text-secondary small">
+
+                                Quantidade a reservar
+
+                            </label>
+
+                            <input type="number"
+                                   class="form-control"
+                                   id="reservaQuantidade"
+                                   name="quantity"
+                                   value="1"
+                                   min="1"
+                                   step="1"
+                                   required>
+
+                            <div class="form-text"
+                                 id="textoEstoqueReserva">
+                            </div>
+
                         </div>
-                        <input type="hidden" name="equipamento_id" id="reservaEquipamentoId">
+
+                        <!-- Data de devolução -->
                         <div class="mb-3">
-                            <label class="form-label fw-semibold text-secondary small">Data e Hora de Retirada</label>
-                            <input type="datetime-local" class="form-control" name="data_retirada" required>
+
+                            <label for="dataDevolucao"
+                                   class="form-label fw-semibold text-secondary small">
+
+                                Data Prevista de Devolução
+
+                            </label>
+
+                            <input type="datetime-local"
+                                   class="form-control"
+                                   id="dataDevolucao"
+                                   name="return_date"
+                                   required>
+
                         </div>
+
+                        <!-- Justificativa -->
                         <div class="mb-3">
-                            <label class="form-label fw-semibold text-secondary small">Justificativa de Uso</label>
-                            <select class="form-select" name="justificativa" id="selectJustificativa" onchange="verificarOutroMotivo()" required>
-                                <option value="">Selecione o motivo...</option>
-                                <option value="aula_pratica">Aula Prática / Laboratório</option>
-                                <option value="tcc">Projeto Final de Curso (TCC)</option>
-                                <option value="iniciacao_cientifica">Iniciação Científica (PIBIC/PAIC)</option>
-                                <option value="equipe_competicao">Equipe de Competição</option>
-                                <option value="outro">Outro...</option>
+
+                            <label for="selectJustificativa"
+                                   class="form-label fw-semibold text-secondary small">
+
+                                Justificativa de Uso
+
+                            </label>
+
+                            <select class="form-select"
+                                    id="selectJustificativa"
+                                    name="justificativa"
+                                    required>
+
+                                <option value="">
+                                    Selecione o motivo...
+                                </option>
+
+                                <option value="aula_pratica">
+                                    Aula Prática / Laboratório
+                                </option>
+
+                                <option value="tcc">
+                                    Projeto Final de Curso (TCC)
+                                </option>
+
+                                <option value="iniciacao_cientifica">
+                                    Iniciação Científica (PIBIC/PAIC)
+                                </option>
+
+                                <option value="equipe_competicao">
+                                    Equipe de Competição
+                                </option>
+
+                                <option value="outro">
+                                    Outro...
+                                </option>
+
                             </select>
-                            <input type="text" class="form-control mt-2 d-none" name="justificativa_outro" id="campoOutro" placeholder="Por favor, especifique o motivo de uso...">
+
+                            <!-- Campo para outra justificativa -->
+                            <input type="text"
+                                   class="form-control mt-2 d-none"
+                                   id="campoOutro"
+                                   placeholder="Especifique o motivo...">
+
                         </div>
+
+                        <!-- Observações -->
                         <div class="mb-1">
-                            <label class="form-label fw-semibold text-secondary small">Observações (Opcional)</label>
-                            <textarea class="form-control" rows="2" name="observacoes" placeholder="Ex: Preciso de conectores BNC extras..."></textarea>
+
+                            <label for="observacoes"
+                                   class="form-label fw-semibold text-secondary small">
+
+                                Observações (Opcional)
+
+                            </label>
+
+                            <textarea class="form-control"
+                                      id="observacoes"
+                                      name="obs"
+                                      rows="2"
+                                      placeholder="Ex: Preciso de conectores BNC extras..."></textarea>
+
                         </div>
+
+                        <!-- Mensagem de erro da reserva -->
+                        <div id="erroReserva"
+                             class="alert alert-danger d-none mt-3"
+                             role="alert">
+                        </div>
+
                     </div>
+
                     <div class="modal-footer bg-light border-0">
-                        <button type="button" class="btn btn-outline-secondary fw-bold px-4" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary fw-bold px-4">Enviar Solicitação</button>
+
+                        <button type="button"
+                                class="btn btn-outline-secondary fw-bold px-4"
+                                data-bs-dismiss="modal">
+
+                            Cancelar
+
+                        </button>
+
+                        <button type="submit"
+                                class="btn btn-primary fw-bold px-4"
+                                id="btnEnviarReserva">
+
+                            Enviar Solicitação
+
+                        </button>
+
                     </div>
+
                 </form>
+
             </div>
+
         </div>
+
     </div>
 
-    <div class="modal fade" id="modalHistorico" tabindex="-1" aria-hidden="true">
+    <!-- ============================================================
+         MODAL DE HISTÓRICO DE EMPRÉSTIMOS
+         ============================================================ -->
+
+    <div class="modal fade"
+         id="modalHistorico"
+         tabindex="-1"
+         aria-labelledby="modalHistoricoTitulo"
+         aria-hidden="true">
+
         <div class="modal-dialog modal-lg modal-dialog-centered">
+
             <div class="modal-content border-0 shadow">
+
                 <div class="modal-header bg-secondary text-white border-0">
-                    <h5 class="modal-title fw-bold">Histórico de Empréstimos</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+                    <h5 class="modal-title fw-bold"
+                        id="modalHistoricoTitulo">
+
+                        Histórico de Empréstimos
+
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"
+                            aria-label="Fechar">
+                    </button>
+
                 </div>
-                <div class="modal-body p-0">
+
+                <div class="modal-body p-0 table-responsive">
+
                     <table class="table table-hover align-middle mb-0">
+
                         <thead class="table-light">
+
                             <tr>
-                                <th class="ps-4">Equipamento</th>
-                                <th>Retirada</th>
-                                <th>Devolução</th>
-                                <th class="pe-4 text-end">Status</th>
+
+                                <th class="ps-4">
+                                    Equipamento
+                                </th>
+
+                                <th>
+                                    Registro
+                                </th>
+
+                                <th>
+                                    Devolução prevista / efetiva
+                                </th>
+
+                                <th class="pe-4 text-end">
+                                    Status
+                                </th>
+
                             </tr>
+
                         </thead>
-                        <tbody>
+
+                        <!-- Histórico carregado pelo JavaScript -->
+                        <tbody id="corpoHistorico">
+
                             <tr>
-                                <td class="ps-4">
-                                    <strong>Carga Eletrônica DC Programável</strong><br>
-                                    <small class="text-muted">EE-LAB-045 | Ensaio de conversores DC-DC</small>
+
+                                <td colspan="4"
+                                    class="text-muted text-center py-4">
+
+                                    Carregando histórico...
+
                                 </td>
-                                <td>10/08/2026</td>
-                                <td>17/08/2026</td>
-                                <td class="pe-4 text-end"><span class="badge bg-success">Devolvido</span></td>
+
                             </tr>
-                            <tr>
-                                <td class="ps-4">
-                                    <strong>Módulo de Treinamento BJT/MOSFET</strong><br>
-                                    <small class="text-muted">EE-LAB-012 | Relatório de polarização e pequeno sinal</small>
-                                </td>
-                                <td>01/08/2026</td>
-                                <td>08/08/2026</td>
-                                <td class="pe-4 text-end"><span class="badge bg-success">Devolvido</span></td>
-                            </tr>
+
                         </tbody>
+
                     </table>
+
                 </div>
+
                 <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-secondary fw-bold px-4" data-bs-dismiss="modal">Fechar Histórico</button>
+
+                    <button type="button"
+                            class="btn btn-secondary fw-bold px-4"
+                            data-bs-dismiss="modal">
+
+                        Fechar Histórico
+
+                    </button>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
 
+    <!-- Bootstrap JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function verificarOutroMotivo() {
-            const select = document.getElementById('selectJustificativa');
-            const campoOutro = document.getElementById('campoOutro');
-            if (select.value === 'outro') {
-                campoOutro.classList.remove('d-none');
-                campoOutro.required = true;
-            } else {
-                campoOutro.classList.add('d-none');
-                campoOutro.required = false;
-                campoOutro.value = '';
-            }
-        }
 
-        function prepararReserva(id, nome) {
-            document.getElementById('reservaEquipamentoId').value = id;
-            document.getElementById('reservaEquipamentoNome').textContent = nome;
-        }
+    <!-- Integração com o backend FastAPI -->
+    <script type="module" src="../static/js/painel.js"></script>
 
-        let filtroAtual = 'todos';
-        function setFiltro(filtro, botao) {
-            filtroAtual = filtro;
-            document.querySelectorAll('.filtro-chip').forEach(b => {
-                b.classList.remove('active', 'btn-primary');
-                b.classList.add('btn-outline-secondary');
-            });
-            botao.classList.remove('btn-outline-secondary');
-            botao.classList.add('active', 'btn-primary');
-            filtrarEquipamentos();
-        }
-
-        function filtrarEquipamentos() {
-            const termo = document.getElementById('buscaEquipamento').value.trim().toLowerCase();
-            const linhas = document.querySelectorAll('#tabelaEquipamentos tbody tr[data-status]');
-            let algumVisivel = false;
-
-            linhas.forEach(linha => {
-                const nome = linha.dataset.nome || '';
-                const patrimonio = linha.dataset.patrimonio || '';
-                const status = linha.dataset.status || '';
-
-                const bateBusca = !termo || nome.includes(termo) || patrimonio.includes(termo);
-                const bateFiltro = filtroAtual === 'todos' || status === filtroAtual;
-
-                const visivel = bateBusca && bateFiltro;
-                linha.style.display = visivel ? '' : 'none';
-                if (visivel) algumVisivel = true;
-            });
-
-            const avisoVazio = document.getElementById('avisoNenhumResultado');
-            if (avisoVazio) {
-                avisoVazio.style.display = (!algumVisivel && linhas.length > 0) ? '' : 'none';
-            }
-        }
-    </script>
 </body>
 </html>
