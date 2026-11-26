@@ -1,3 +1,3 @@
 from app.services.user_service import create_user, get_users, get_user_by_email, delete_user, update_user_role
-from app.services.component_service import create_component, get_by_id, get_all, delete, get_all_available
-from app.services.reservation_service import create_reservation, get_reservations, get_reservetions_current_user, devolution
+from app.services.component_service import create_component, get_by_id, get_all, delete, get_all_available, quantity_component_available, update_quantity
+from app.services.reservation_service import create_reservation, get_reservations, get_reservetions_current_user, devolution, get_reservations_solicitacao, get_reservations_user

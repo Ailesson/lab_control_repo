@@ -35,6 +35,22 @@ def get_reservetions(
 ):
     return reservation_service.get_reservations(db)
 
+@router.get("/admin/user/{id}", response_model=List[ReservationResponse], status_code=status.HTTP_200_OK)
+def get_reservetions_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    return reservation_service.get_reservations_user(user_id, db)
+
+
+@router.get("/solicitacao", response_model=List[ReservationResponse], status_code=status.HTTP_200_OK)
+def get_reservetions_solicitacao(
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    return reservation_service.get_reservations_solicitacao(db)
+
 @router.patch("/devolution", response_model=ReservationResponse, status_code= status.HTTP_200_OK)
 def devolution(
     reservation_id: int,

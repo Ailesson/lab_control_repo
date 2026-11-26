@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 class ReservationCreate(BaseModel):
-    component_id: int
+    component_id: str
     quantity: int
     expected_return_date: datetime
     justificativa: str

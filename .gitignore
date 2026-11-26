@@ -1,0 +1,15 @@
+# Ambientes virtuais
+.venv/
+venv/
+**/.venv/
+**/venv/
+backend/.venv/
+
+
+# Cache do Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Imagens enviadas pelos usuários
+media/

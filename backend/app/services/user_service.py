@@ -111,9 +111,9 @@ def updateStatus(
             detail="User not found"
         )
 
-    if novoStatus == "Bloquear":
+    if novoStatus == "Bloqueado":
         user.status = Status.BLOCKED.value
-    if novoStatus == "Desbloquear":
+    if novoStatus == "Liberado":
         user.status = Status.RELEASED.value
 
     return user_repository.update(

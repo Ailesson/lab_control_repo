@@ -72,7 +72,7 @@ class User(Base):
     cpf: Mapped[str] = mapped_column(
         String(11),
         unique=True,
-        nullable=True
+        nullable=False
     )
 
     telefone:Mapped[str] = mapped_column(
@@ -83,7 +83,7 @@ class User(Base):
     matricula: Mapped[str] = mapped_column(
         String(8),
         unique=True,
-        nullable=True
+        nullable=False
     )
 
     status: Mapped[str] = mapped_column(

@@ -24,7 +24,9 @@ def create_admin():
             email=email,
             password_hash=hash_password("senha_admin"),
             role=UserRole.ADMIN.value,
-            is_active=True
+            is_active=True,
+            cpf = "00000000000",
+            matricula = "00000000" 
         )
 
         db.add(admin)

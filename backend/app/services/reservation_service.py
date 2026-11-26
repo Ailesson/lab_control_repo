@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Reservation, User, ReservationStatus
 from app.schemas import ReservationCreate, ReservationResponse
-from app.repositories import reservation_repository, component_repository
+from app.repositories import reservation_repository, component_repository, user_repository
 from app.services import component_service
 
 
@@ -34,9 +34,7 @@ def create_reservation(
         loan_date = loan_date,
         expected_return_date = reservation_data.expected_return_date,
         justificativa = reservation_data.justificativa,
-        Obs = reservation_data.Obs,
-        user_name = current_user.name,
-        user_matricula = current_user.matricula
+        Obs = reservation_data.Obs
     )
 
     return reservation_repository.create(db, reservation)
@@ -70,6 +68,36 @@ def get_reservations(
         )
 
     return reservations
+
+def get_reservations_user(
+    user_id: int,
+    db: Session     
+):
+    user = user_repository.get_by_id(db,user_id)
+    if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+    return user.reservations
+
+def get_reservations_solicitacao(
+    db: Session
+):
+    reservations = reservation_repository.get_all(db)
+
+    if reservations is None:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Reservas não encontrados"
+        )
+    solicitacao = []
+    for reserva in reservations:
+         if reserva.status==ReservationStatus.RESERVED:
+              solicitacao.append(reserva)
+
+    return solicitacao
+
 
 def devolution(
     db: Session,

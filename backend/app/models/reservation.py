@@ -7,12 +7,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
 class ReservationStatus(str, Enum):
-    BORROWED= "Comfirmado"
-    LATE = "Atraso"
-    RESERVED = "Reservado"
-    RETURNED = "Devolvido"
-    BLOCKED= "Bloqueado"
-    REFUSED= "Recusado"
+    BORROWED= "confirmado"
+    LATE = "atraso"
+    RESERVED = "reservado"
+    RETURNED = "devolvido"
+    BLOCKED= "bloqueado"
+    REFUSED= "recusado"
 
 
 class Reservation(Base):
@@ -90,3 +90,11 @@ class Reservation(Base):
     @property
     def component_name(self) -> str:
         return self.component.name
+    
+    @property
+    def user_name(self) -> str:
+        return self.user.name
+
+    @property
+    def user_matricula(self) -> str:
+            return self.user.matricula

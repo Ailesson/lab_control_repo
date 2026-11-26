@@ -9,7 +9,6 @@ class ComponentCreate(BaseModel):
     quantity: int
     state: str | None = None
     obs: str | None = None
-    image_url: str | None = None
 
 class ComponentResponse(BaseModel):
     id: int 

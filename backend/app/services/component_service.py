@@ -1,13 +1,16 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, UploadFile, File
+from app.services.image_service import salvar_imagem
 from sqlalchemy.orm import Session
+
 
 from app.models import Component, User, Reservation, ReservationStatus
 from app.schemas import ComponentCreate, ComponentAvailableResponse
 from app.repositories import component_repository
 
-def create_component(
+async def create_component(
     db: Session,
-    component_data: ComponentCreate   
+    component_data: str,
+    file: UploadFile = File(...)   
 ):
    existing_component = component_repository.get_by_id(
       db,
@@ -19,7 +22,9 @@ def create_component(
             status_code=status.HTTP_409_CONFLICT,
             detail="Componente já registrado"
     )
-
+   
+   image_url = await salvar_imagem(file)
+   
    component = Component(
        component_id=component_data.component_id,
        name = component_data.name,
@@ -27,7 +32,7 @@ def create_component(
        quantity = component_data.quantity ,
        state = component_data.state,
        obs = component_data.obs,
-       image_url = None
+       image_url = image_url
    )
 
    return component_repository.create(db, component)
@@ -59,7 +64,7 @@ def get_all(
 
 def quantity_component_available(
     db: Session,
-    component_id: int
+    component_id: str
 ):
     component =  component_repository.get_by_id(db, component_id)
     if component is None:
@@ -78,7 +83,19 @@ def quantity_component_available(
 
     return component.quantity-quantity
 
-    
+def update_quantity(
+    db: Session,
+    component_id: str,
+    new_quantity: int
+):    
+    component =  component_repository.get_by_id(db, component_id)
+    if component is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Componente não encontrado"
+            )
+    component.quantity = new_quantity
+    return component_repository.update(db, component)
 
 def get_all_available(
     db: Session
@@ -101,7 +118,7 @@ def get_all_available(
 
 def delete(
     db: Session,
-    component_id: int
+    component_id: str
 ):
     component =  component_repository.get_by_id(db, component_id)
     
