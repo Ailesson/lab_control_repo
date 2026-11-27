@@ -7,6 +7,17 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int 
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+
+    SMTP_USER: str
+    SMTP_PASSWORD: str
+
+    SMTP_FROM: str
+
+    SMTP_FROM_NAME: str = (
+        "Almoxarifado Laboratorio de Energia e Controle - UFAM"
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",

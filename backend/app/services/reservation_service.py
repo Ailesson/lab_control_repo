@@ -1,12 +1,12 @@
 from datetime import datetime, timezone, timedelta
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.models import Reservation, User, ReservationStatus
 from app.schemas import ReservationCreate, ReservationResponse
 from app.repositories import reservation_repository, component_repository, user_repository
-from app.services import component_service
+from app.services import component_service, email_service
 
 
 def create_reservation(
@@ -118,7 +118,7 @@ def devolution(
 def status(
     db: Session,
     reservation_id: int,
-    novo_status: str    
+    novo_status: str,   
 ):
     reservation = reservation_repository.get_by_id(db, reservation_id)
 
@@ -129,7 +129,8 @@ def status(
         )
 
     if novo_status =="Aprovar":
-        reservation.status = ReservationStatus.BORROWED.value
+        reservation.status = ReservationStatus.CONFIRMED.value
+        
 
     if novo_status =="Recusar":
             reservation.status = ReservationStatus.REFUSED.value
@@ -137,5 +138,19 @@ def status(
     if novo_status =="Bloquear":
             reservation.status = ReservationStatus.BLOCKED.value
 
-    return reservation_repository.update(db, reservation)
+    if novo_status =="Emprestar":
+                reservation.status = ReservationStatus.BORROWED.value
+
+    if novo_status =="Devolver":
+                    reservation.status = ReservationStatus.RETURNED.value
+
+    reservation_updated = reservation_repository.update(db, reservation)
+
+    if novo_status in ["Aprovar", "Recusar"]:
+
+        email_service.notificar_status_reserva(
+            reservation_updated
+        )
+
+    return reservation_updated
 

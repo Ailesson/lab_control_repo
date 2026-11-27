@@ -81,7 +81,7 @@ def get_by_id(
 
 @router.delete('/{componente_id}', status_code=status.HTTP_200_OK)
 def delete_component(
-    component_id: int,
+    component_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):

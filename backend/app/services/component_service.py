@@ -78,7 +78,7 @@ def quantity_component_available(
     quantity = 0
 
     for reserva in reservas:
-        if reserva.status != ReservationStatus.RETURNED.value: 
+        if reserva.status != ReservationStatus.RETURNED.value and reserva.status != ReservationStatus.REFUSED.value: 
             quantity += reserva.quantity
 
     return component.quantity-quantity

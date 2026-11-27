@@ -1,4 +1,4 @@
-import { apiRequest } from "./api.js";
+import { apiRequest, API_URL } from "./api.js";
 
 // ==========================================
 // ROTAS DO BACKEND
@@ -12,7 +12,8 @@ const ROTA_QUANTIDADE = (component_id, new_quantity) =>
 
 // Rotas aguardando implementação
 const ROTA_STATUS = null;
-const ROTA_EXCLUIR = null;
+const ROTA_EXCLUIR = (component_id) =>
+    `/component/${encodeURIComponent(component_id)}?component_id=${encodeURIComponent(component_id)}`;
 
 // ==========================================
 // ELEMENTOS DO HTML
@@ -140,6 +141,12 @@ function obterFoto(item, tamanho = "100x100") {
         `https://placehold.co/${tamanho}/e2e8f0/1e293b?text=Sem+Foto`;
 
     if (!item.image_url) {
+
+        console.warn(
+            "Equipamento sem imagem:",
+            item.component_id
+        );
+
         return placeholder;
     }
 
@@ -147,19 +154,23 @@ function obterFoto(item, tamanho = "100x100") {
 
         const url = new URL(
             item.image_url,
-            window.location.origin
+            API_URL
         );
 
         if (!["http:", "https:"].includes(url.protocol)) {
             return placeholder;
         }
 
+        console.log("Caminho recebido:", item.image_url);
+        console.log("URL da imagem:", url.href);
+
         return url.href;
 
-    } catch {
+    } catch (erro) {
+
+        console.error("Erro ao carregar imagem:", erro);
 
         return placeholder;
-
     }
 }
 
