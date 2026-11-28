@@ -36,4 +36,5 @@ class UserUpdate(BaseModel):
     is_active: bool | None = None
     telefone: str | None = None
     status: str | None = None
+
     

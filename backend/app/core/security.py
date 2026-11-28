@@ -3,6 +3,8 @@ from datetime import datetime, timedelta, timezone
 import jwt
 from fastapi.security import OAuth2PasswordBearer
 
+import secrets
+import hashlib
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/auth/login"
@@ -52,3 +54,14 @@ def create_access_token(
     )
 
     return token
+
+def gerar_token_recuperacao() -> str:
+
+    return secrets.token_urlsafe(32)
+
+
+def gerar_hash_token(token: str) -> str:
+
+    return hashlib.sha256(
+        token.encode("utf-8")
+    ).hexdigest()

@@ -2,7 +2,7 @@ import smtplib
 import ssl
 import logging
 
-from app.models import Reservation, ReservationStatus
+from app.models import Reservation, ReservationStatus, User
 
 from email.message import EmailMessage
 from email.utils import formataddr
@@ -153,3 +153,41 @@ Esta é uma mensagem automática.
         assunto=assunto,
         mensagem=mensagem
     )
+
+
+def recuperar_senha(
+        user: User,
+        link: str
+):
+   assunto = "Redefinição de senha – Almoxarifado UFAM"
+   mensagem = f""""
+   Olá, {user.name}!
+
+    Recebemos uma solicitação de redefinição de senha da sua conta no Sistema de Almoxarifado do Laboratório de Energia e Controle.
+
+    Para cadastrar uma nova senha, acesse o link abaixo:
+
+    {link}
+
+    INFORMAÇÕES DE SEGURANÇA
+
+    - O link é pessoal, temporário e de uso único.
+    - Não compartilhe este link com outras pessoas.
+    - Caso você não tenha solicitado a redefinição de senha, ignore este e-mail. Sua senha atual permanecerá inalterada.
+
+    Em caso de dúvidas, entre em contato com a administração do almoxarifado.
+
+    Atenciosamente,
+
+    Almoxarifado do Laboratório de Energia e Controle
+    Universidade Federal do Amazonas - UFAM
+
+    Esta é uma mensagem automática.
+    Por favor, não responda a este e-mail.
+"""
+
+   return enviar_email(
+           destinatario=user.email,
+           assunto=assunto,
+           mensagem=mensagem
+       )

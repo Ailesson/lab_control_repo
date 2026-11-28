@@ -18,6 +18,11 @@ def get_by_email(db: Session, email: str):
         select(User).where(User.email == email)
     )
 
+def get_by_cpf(db: Session, cpf: str):
+    return db.scalar(
+       select(User).where(User.cpf == cpf) 
+    )
+
 
 def create(db: Session, user: User):
     db.add(user)

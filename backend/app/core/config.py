@@ -19,6 +19,10 @@ class Settings(BaseSettings):
         "Almoxarifado Laboratorio de Energia e Controle - UFAM"
     )
 
+    PASSWORD_RESET_EXPIRE_MINUTES: int = 15
+
+    FRONTEND_URL: str
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8"

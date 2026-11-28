@@ -3,7 +3,7 @@ from fastapi import APIRouter,  Depends, status
 from app.models import User
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.schemas import UserResponse, UserCreate, UserRoleUpdate
+from app.schemas import UserResponse, UserCreate, UserRoleUpdate, RecuperacaoSenha, RedefinirSenha
 from app.services import user_service
 from app.dependencies.auth import get_current_user, require_admin, require_control
 
@@ -67,3 +67,30 @@ def updateStatus(
     current_user: User = Depends(require_admin)
 ):
    return user_service.updateStatus(id, novoStatus, db) 
+
+@router.post(
+    "/senha/cpf",
+    status_code=status.HTTP_200_OK
+)
+def cpfSenha(
+    dados: RecuperacaoSenha,
+    db: Session = Depends(get_db)
+):
+
+    return user_service.cpfSenha(dados.cpf, db)
+
+@router.post(
+    "/senha/redefinir",
+    status_code=status.HTTP_200_OK
+)
+def redefinir_senha(
+
+    dados: RedefinirSenha,
+
+    db: Session = Depends(get_db)
+):
+
+    return user_service.redefinir_senha(
+        db,
+        dados
+    )

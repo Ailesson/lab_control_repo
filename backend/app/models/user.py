@@ -92,11 +92,13 @@ class User(Base):
         nullable=True
     )
 
- 
-
-
-
     reservations = relationship(
         "Reservation",
         back_populates="user"
+    )
+
+    password_resets = relationship(
+        "PasswordReset",
+        back_populates="user",
+        cascade="all, delete-orphan"
     )
